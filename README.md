@@ -1,24 +1,31 @@
-# PetWALK Home Assistant Custom Integration
+# PetWALK Local API Integration (v3.0.0)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
-![Version](https://img.shields.io/github/v/release/YOUR_USERNAME/hapetwalk)
+![Release](https://img.shields.io/github/v/release/YOUR_USERNAME/hapetwalk)
 
-Local REST API control for PetWALK smart doors.
+Control your PetWALK smart door **locally** via REST API (port 8080) – no cloud required.
+
+## Requirements
+- PetWALK.control module firmware ≥ 1.1
+- REST API enabled (PetWALK app → Advanced → REST API)
 
 ## Installation (HACS – recommended)
-1. Add this repo to HACS (Settings → Repositories → Custom repositories)
-2. Install “PetWALK”
-3. Restart HA
+1. Add this repository to HACS (Custom repositories)
+2. Install "PetWALK"
+3. Restart Home Assistant
 4. Settings → Devices & Services → Add Integration → PetWALK
 
-## Manual Installation
-Copy `custom_components/petwalk/` to your `/config/custom_components/` folder and restart HA.
-
 ## Configuration
-- IP address (same as app)
+- IP address (same used in the official app)
 - Username / Password (same as app)
 - Port (default 8080)
 - Flag “Include all door events” to create pet sensors/trackers
 
-## Changelog
-See [CHANGELOG.md](CHANGELOG.md)
+## Entities provided
+- **Cover**: Door open / close
+- **Switches**: Brightness sensor, Motion IN/OUT, RFID, Time, System
+- **Device Tracker**: one per pet (if enabled)
+- **Sensor**: last event timestamp per pet (if enabled)
+
+## Support
+[GitHub Issues](https://github.com/Dav41K9/hapetwalk/issues)
