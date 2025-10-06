@@ -1,32 +1,64 @@
 {
-    "config": {
-        "abort": {
-            "already_configured": "Device is already configured"
-        },
-        "error": {
-            "cannot_connect": "Failed to connect",
-            "cannot_connect_timeout": "Timeout trying to connect",
-            "invalid_auth": "Invalid authentication",
-            "unknown": "Unexpected error"
-        },
-        "step": {
-            "user": {
-                "data": {
-                    "ip_address": "IP Address",
-                    "password": "Password",
-                    "username": "Username",
-                    "include_all_events": "Include all Door events"
-                }
-            }
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to PetWALK",
+        "description": "Enter the IP and credentials you use in the official app (port 8080 by default).",
+        "data": {
+          "ip_address": "IP Address",
+          "username": "Username",
+          "password": "Password",
+          "port": "Port",
+          "include_all_events": "Include all door events (create pet sensors/trackers)"
         }
+      }
     },
-    "options": {
-        "step": {
-            "init": {
-                "data": {
-                    "include_all_events": "Include all Door events"
-                }
-            }
-        }
+    "error": {
+      "cannot_connect": "Failed to connect – check IP/port/credentials",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "Device already configured"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "PetWALK Options",
+        "description": "",
+        "data": {
+          "port": "Port",
+          "include_all_events": "Include all door events"
+        }
+      }
+    }
+  },
+  "entity": {
+    "cover": {
+      "door": {
+        "name": "Door"
+      }
+    },
+    "switch": {
+      "brightness_sensor": {
+        "name": "Brightness sensor"
+      },
+      "motion_in": {
+        "name": "Motion IN"
+      },
+      "motion_out": {
+        "name": "Motion OUT"
+      },
+      "rfid": {
+        "name": "RFID"
+      },
+      "time": {
+        "name": "Time mode"
+      },
+      "system": {
+        "name": "System"
+      }
+    }
+  }
 }
