@@ -1,21 +1,8 @@
-"""Platform for PetWALK switch."""
+"""Switch platform per PetWALK."""
 from __future__ import annotations
 
 import logging
 from typing import Any
-
-from pypetwalk.const import (
-    API_STATE_BRIGHTNESS_SENSOR,
-    API_STATE_MOTION_IN,
-    API_STATE_MOTION_OUT,
-    API_STATE_RFID,
-    API_STATE_SYSTEM,
-    API_STATE_TIME,
-)
-from pypetwalk.exceptions import (
-    PyPetWALKClientConnectionError,
-    PyPetWALKInvalidResponseStatus,
-)
 
 from homeassistant import config_entries
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
@@ -23,12 +10,21 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import DiscoveryInfoType
-from homeassistant.helpers.update_coordinator import CoordinatorEntity, UpdateFailed
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import COORDINATOR, COORDINATOR_KEY_API_DATA, DOMAIN, NAME
+from .const import COORDINATOR_KEY_API_DATA, DOMAIN, NAME
 from .coordinator import PetwalkCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+SWITCHES = [
+    ("Brightness Sensor", "brightness_sensor", "brightnessSensor", "mdi:brightness-6"),
+    ("Motion IN", "motion_in", "motion_in", "mdi:account-arrow-left"),
+    ("Motion OUT", "motion_out", "motion_out", "mdi:account-arrow-right"),
+    ("RFID", "rfid", "rfid", "mdi:nfc-variant"),
+    ("Time", "time", "time", "mdi:clock-time-eight"),
+    ("System", "system", "system", "mdi:power"),
+]
 
 
 async def async_setup_entry(
@@ -37,61 +33,17 @@ async def async_setup_entry(
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up the switch platform."""
-    coordinator: PetwalkCoordinator = hass.data[DOMAIN][COORDINATOR]
-
-    switches = [
-        PetWALKSwitch(
-            coordinator,
-            entity_name="Brightness Sensor",
-            entity_id="brightness_sensor",
-            api_data_key=API_STATE_BRIGHTNESS_SENSOR,
-            icon="mdi:brightness-6",
-        ),
-        PetWALKSwitch(
-            coordinator,
-            entity_name="Motion IN",
-            entity_id="motion_in",
-            api_data_key=API_STATE_MOTION_IN,
-            icon="mdi:account-arrow-left",
-        ),
-        PetWALKSwitch(
-            coordinator,
-            entity_name="Motion OUT",
-            entity_id="motion_out",
-            api_data_key=API_STATE_MOTION_OUT,
-            icon="mdi:account-arrow-right",
-        ),
-        PetWALKSwitch(
-            coordinator,
-            entity_name="RFID",
-            entity_id="rfid",
-            api_data_key=API_STATE_RFID,
-            icon="mdi:nfc-variant",
-        ),
-        PetWALKSwitch(
-            coordinator,
-            entity_name="Time",
-            entity_id="time",
-            api_data_key=API_STATE_TIME,
-            icon="mdi:clock-time-eight",
-        ),
-        PetWALKSwitch(
-            coordinator,
-            entity_name="System",
-            entity_id="system",
-            api_data_key=API_STATE_SYSTEM,
-            icon="mdi:power",
-        ),
-    ]
-
-    add_entities(switches)
+    """Set up switches."""
+    coordinator: PetwalkCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    add_entities(
+        PetwalkSwitch(coordinator, name, eid, key, icon)
+        for name, eid, key, icon in SWITCHES
+    )
 
 
-class PetWALKSwitch(CoordinatorEntity, SwitchEntity):
-    """PetWALK Switch Entity."""
+class PetwalkSwitch(CoordinatorEntity[PetwalkCoordinator], SwitchEntity):
+    """PetWALK switch."""
 
-    _attr_available = False
     _attr_device_class = SwitchDeviceClass.SWITCH
 
     def __init__(
@@ -99,75 +51,27 @@ class PetWALKSwitch(CoordinatorEntity, SwitchEntity):
         coordinator: PetwalkCoordinator,
         entity_name: str,
         entity_id: str,
-        api_data_key: str,
+        api_key: str,
         icon: str | None = None,
     ) -> None:
-        """Initialize the Switch."""
+        """Init."""
         super().__init__(coordinator)
-
-        self._state = False
-        self._device_name = coordinator.device_name
-        self._name = entity_name
-        self._entity_id = entity_id
-        self._api_data_key = api_data_key
-
-        if icon is not None:
+        self._api_key = api_key
+        self._attr_name = f"{NAME} {coordinator.device_info['name']} {entity_name}"
+        self._attr_unique_id = f"{DOMAIN}_{coordinator.device_info['name']}_{entity_id}"
+        self._attr_device_info = coordinator.device_info
+        if icon:
             self._attr_icon = icon
 
     @property
-    def unique_id(self) -> str:
-        """Return a unique ID."""
-        return f"{DOMAIN}_{self._device_name}_{self._entity_id}"
-
-    @property
-    def name(self) -> str:
-        """Return the name of the entity."""
-        return f"{NAME} {self._device_name} {self._name}"
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return the device info."""
-        return self.coordinator.device_info
-
-    @property
     def is_on(self) -> bool:
-        """Return the current entity state."""
-        return self._state
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        if COORDINATOR_KEY_API_DATA in self.coordinator.data:
-            data = self.coordinator.data[COORDINATOR_KEY_API_DATA]
-
-            if self._api_data_key not in data:
-                raise UpdateFailed(
-                    f"Unknown response value {data} for key {self._api_data_key}"
-                )
-
-            self._state = data[self._api_data_key]
-            self.async_write_ha_state()
+        """State."""
+        return self.coordinator.data.get(COORDINATOR_KEY_API_DATA, {}).get(self._api_key, False)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn the entity on."""
-        try:
-            await self.coordinator.set_state(self._api_data_key, True)
-
-            self._state = True
-            self._attr_available = True
-
-            self.async_write_ha_state()  # PetWALK API is slow, so sync here the state
-        except (PyPetWALKInvalidResponseStatus, PyPetWALKClientConnectionError):
-            self._attr_available = False
+        """Turn on."""
+        await self.coordinator.set_mode(self._api_key, True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Turn the entity off."""
-        try:
-            await self.coordinator.set_state(self._api_data_key, False)
-
-            self._state = False
-            self._attr_available = True
-
-            self.async_write_ha_state()  # PetWALK API is slow, so sync here the state
-        except (PyPetWALKInvalidResponseStatus, PyPetWALKClientConnectionError):
-            self._attr_available = False
+        """Turn off."""
+        await self.coordinator.set_mode(self._api_key, False)

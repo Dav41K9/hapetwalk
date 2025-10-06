@@ -5,6 +5,9 @@ NAME = "PetWALK"
 COORDINATOR = "coordinator"
 MANUFACTURER = "Petwalk Solutions GmbH"
 
+CONF_PORT = "port"
+DEFAULT_PORT = 8080
+
 CONF_INCLUDE_ALL_EVENTS = "include_all_events"
 DEFAULT_INCLUDE_ALL_EVENTS = False
 
