@@ -1,4 +1,0 @@
-*.md
-.strict-typing
-.github
-custom_components/*/translations/*.json
