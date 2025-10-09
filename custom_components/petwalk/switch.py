@@ -6,7 +6,7 @@ from typing import Any
 
 from homeassistant import config_entries
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import DiscoveryInfoType
@@ -17,6 +17,7 @@ from .coordinator import PetwalkCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+# (Friendly name, entity_id_suffix, api_key, icon)
 SWITCHES = [
     ("Brightness Sensor", "brightness_sensor", "brightnessSensor", "mdi:brightness-6"),
     ("Motion IN", "motion_in", "motion_in", "mdi:account-arrow-left"),
@@ -33,7 +34,7 @@ async def async_setup_entry(
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up switches."""
+    """Set up PetWALK switches."""
     coordinator: PetwalkCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     add_entities(
         PetwalkSwitch(coordinator, name, eid, key, icon)
@@ -54,7 +55,7 @@ class PetwalkSwitch(CoordinatorEntity[PetwalkCoordinator], SwitchEntity):
         api_key: str,
         icon: str | None = None,
     ) -> None:
-        """Init."""
+        """Initialize the switch."""
         super().__init__(coordinator)
         self._api_key = api_key
         self._attr_name = f"{NAME} {coordinator.device_info['name']} {entity_name}"
@@ -65,13 +66,21 @@ class PetwalkSwitch(CoordinatorEntity[PetwalkCoordinator], SwitchEntity):
 
     @property
     def is_on(self) -> bool:
-        """State."""
-        return self.coordinator.data.get(COORDINATOR_KEY_API_DATA, {}).get(self._api_key, False)
+        """Return switch state."""
+        return bool(
+            self.coordinator.data.get(COORDINATOR_KEY_API_DATA, {}).get(self._api_key, False)
+        )
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on."""
-        await self.coordinator.set_mode(self._api_key, True)
+        if self._api_key == "system":
+            await self.coordinator.set_state("system", True)
+        else:
+            await self.coordinator.set_mode(self._api_key, True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off."""
-        await self.coordinator.set_mode(self._api_key, False)
+        if self._api_key == "system":
+            await self.coordinator.set_state("system", False)
+        else:
+            await self.coordinator.set_mode(self._api_key, False)
